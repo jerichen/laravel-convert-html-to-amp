@@ -1,0 +1,20 @@
+{
+    "name": "jerichen/laravel-convert-html-to-amp",
+    "keywords": ["framework", "laravel", "amp"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jeri Chen",
+            "email": "jeri.chen0805@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1",
+        "laravel/framework": "5.7.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jerichen\\Amp\\": "src"
+        }
+    }
+}
