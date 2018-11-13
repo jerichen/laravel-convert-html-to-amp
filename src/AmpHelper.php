@@ -1,45 +1,82 @@
 <?php
-namespace Jerichen\Amp;
+namespace Cw\Amp;
 
+use Cw\Amp\app\models\Article;
 use DOMDocument;
 use Imagick;
 use Log;
 use Exception;
 
-class Article
+class AmpHelper
 {
-    public function transferContent($content)
+    protected $article;
+    protected $article_index_id_key;
+    protected $article_content_key;
+
+    public function __construct()
+    {
+        $this->setArticle();
+        $this->setArticleIdKey();
+        $this->setArticleContentKey();
+    }
+
+    public function setArticle($article = Article::class)
+    {
+        $this->article = $article;
+    }
+
+    public function setArticleIdKey($article_id_key = 'id')
+    {
+        $this->article_index_id_key = $article_id_key;
+    }
+
+    public function setArticleContentKey($article_content_key = 'content')
+    {
+        $this->article_content_key = $article_content_key;
+    }
+
+    public function transferContent($article_id)
     {
         $result = collect();
-        $result->put('content', $content);
+        $result->put('article_id', $article_id);
 
-        $amp_content = $this->getAmpContent($content);
-        $result->put('amp_content', $amp_content);
+        $article = $this->getArticleContent($article_id);
+        $result->put('amp_content', $article);
 
         return $result;
     }
 
-    private function getAmpContent($content)
+    private function getArticleContent($article_id)
     {
         try{
-            $content = $this->filterTags($content);
-            $dom = new DOMDocument();
-            @$dom->loadHTML(mb_convert_encoding($content, 'HTML-ENTITIES', 'UTF-8'));
+            $content = Article::where($this->article_index_id_key, $article_id)
+                ->pluck($this->article_content_key)
+                ->first();
 
-            $this->ampImage($dom);
-            $this->ampIFrame($dom);
+            if($content){
+                $content = self::filterTags($content);
+                $dom = new DOMDocument();
+                @$dom->loadHTML(mb_convert_encoding($content, 'HTML-ENTITIES', 'UTF-8'));
 
-            $amp_content =  $dom->saveHTML($dom->documentElement);
-            $amp_content = str_replace(['<html><body>', '</body></html>'], ['', ''], $amp_content);
+                self::ampCwUrl($dom, $content);
+                self::ampImage($dom);
+                self::ampIFrame($dom);
 
-            return $amp_content;
+                $amp_content =  $dom->saveHTML($dom->documentElement);
+                $amp_content = str_replace(['<html><body>', '</body></html>'], ['', ''], $amp_content);
+
+                return $amp_content;
+
+            }else{
+                return $content;
+            }
 
         }catch (Exception $e){
-            Log::error("content somethings warning!!:" . $e);
+            Log::error("article_id:{$article_id} . somethings warning!!:" . $e);
         }
     }
 
-    private function filterTags($content)
+    private static function filterTags($content)
     {
         $content = preg_replace('/<(\/?font.*?)>/si', '', $content);
         $content = preg_replace('/style=\"[\s\S]*?\"/i', '', $content);
@@ -47,7 +84,29 @@ class Article
         return $content;
     }
 
-    private function ampImage(DOMDocument &$dom)
+    private static function ampCwUrl(DOMDocument &$dom, $content)
+    {
+        $url_dom = $dom->getElementsByTagName('a');
+
+        foreach ($url_dom as $node) {
+            $url = trim($node->getAttribute('href'));
+
+            $pattern = '/^(https?:\/\/|http?:\/\/|\/\/)(?:www.cw.com.tw)/';
+            $http_check = preg_match($pattern, $url);
+
+            if($http_check){
+                $query = parse_url($url, PHP_URL_QUERY);
+                if($query){
+                    $new_url = $url . '&from=cwamp-article';
+                }else{
+                    $new_url = $url . '?from=cwamp-article';
+                }
+                $node->setAttribute('href', $new_url);
+            }
+        }
+    }
+
+    private static function ampImage(DOMDocument &$dom)
     {
         $img_dom = $dom->getElementsByTagName('img');
         $length = $img_dom->length;
@@ -77,29 +136,29 @@ class Article
         }
     }
 
-    private function ampIFrame(DOMDocument &$dom)
+    private static function ampIFrame(DOMDocument &$dom)
     {
         $iframe_dom = $dom->getElementsByTagName('iframe');
         $length = $iframe_dom->length;
         for ($i = 0; $i < $length; $i++){
             $iframe = $iframe_dom->item(0);
-            $path = $iframe->getAttribute('src');
+            $path = trim($iframe->getAttribute('src'));
 
             // default iframe or youtube iframe
             $pattern = '/^(https?:\/\/|http?:\/\/|\/\/)(?:www.)?(?:youtube.com|youtu.be)?(\/embed\/)([a-zA-Z0-9_-]+)/';
             preg_match($pattern, $path, $match);
 
             if($match){
-                $this->youtubeFrame($dom, $iframe, $path, $match[3]);
+                self::youtubeFrame($dom, $iframe, $path, $match[3]);
             }else{
-                $this->defaultIFrame($dom, $iframe, $path);
+                self::defaultIFrame($dom, $iframe, $path);
             }
         }
 
         return ($iframe_dom->length) ? true : false;
     }
 
-    private function youtubeFrame(DOMDocument &$dom, $iframe, $path, $youtube_id)
+    private static function youtubeFrame(DOMDocument &$dom, $iframe, $path, $youtube_id)
     {
         $path = preg_replace('/^\/\//', 'https://', $path);
         $amp_iframe = $dom->createElement('amp-youtube');
@@ -112,7 +171,7 @@ class Article
         $iframe->parentNode->replaceChild($clone, $iframe);
     }
 
-    private function defaultIFrame(DOMDocument &$dom, $iframe, $path)
+    private static function defaultIFrame(DOMDocument &$dom, $iframe, $path)
     {
         $path = preg_replace('/^\/\//', 'https://', $path);
         $amp_iframe = $dom->createElement('amp-iframe');
