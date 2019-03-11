@@ -117,22 +117,27 @@ class AmpHelper
             $img_path = (!$http_check ? 'http:' : '').$img_path;
 
             $tempFile = tmpfile();
-            $content = file_get_contents($img_path);
-            fwrite($tempFile, $content);
-            fseek($tempFile, 0);
-            $getMeta = stream_get_meta_data($tempFile);
-            $uri = $getMeta['uri'];
-            $image = new Imagick($uri);
-            $image_width = $image->getImageWidth();
-            $image_height = $image->getImageHeight();
-            fclose($tempFile);
+            $header_array = get_headers($img_path,1);
+            if(preg_match('/200/', $header_array[0])){
+                $content = file_get_contents($img_path);
+                fwrite($tempFile, $content);
+                fseek($tempFile, 0);
+                $getMeta = stream_get_meta_data($tempFile);
+                $uri = $getMeta['uri'];
+                $image = new Imagick($uri);
+                $image_width = $image->getImageWidth();
+                $image_height = $image->getImageHeight();
+                fclose($tempFile);
 
-            $amp_img = $dom->createElement('amp-img');
-            $amp_img->setAttribute('src', $img_path);
-            $amp_img->setAttribute('width',$image_width);
-            $amp_img->setAttribute('height', $image_height);
-            $amp_img->setAttribute('layout', 'responsive');
-            $img->parentNode->replaceChild($amp_img, $img);
+                $amp_img = $dom->createElement('amp-img');
+                $amp_img->setAttribute('src', $img_path);
+                $amp_img->setAttribute('width',$image_width);
+                $amp_img->setAttribute('height', $image_height);
+                $amp_img->setAttribute('layout', 'responsive');
+                $img->parentNode->replaceChild($amp_img, $img);
+            }else{
+                $img->parentNode->removeChild($img);
+            }
         }
     }
 
