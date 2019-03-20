@@ -49,7 +49,7 @@ class AmpHelper
     private function getArticleContent($article_id)
     {
         try{
-            $content = Article::where($this->article_index_id_key, $article_id)
+            $content = $this->article->where($this->article_index_id_key, $article_id)
                 ->pluck($this->article_content_key)
                 ->first();
 
@@ -58,7 +58,7 @@ class AmpHelper
                 $dom = new DOMDocument();
                 @$dom->loadHTML(mb_convert_encoding($content, 'HTML-ENTITIES', 'UTF-8'));
 
-                self::ampCwUrl($dom, $content);
+                self::ampExampleUrl($dom, $content);
                 self::ampImage($dom);
                 self::ampIFrame($dom);
 
@@ -84,22 +84,22 @@ class AmpHelper
         return $content;
     }
 
-    private static function ampCwUrl(DOMDocument &$dom, $content)
+    private static function ampExampleUrl(DOMDocument &$dom, $content)
     {
         $url_dom = $dom->getElementsByTagName('a');
 
         foreach ($url_dom as $node) {
             $url = trim($node->getAttribute('href'));
 
-            $pattern = '/^(https?:\/\/|http?:\/\/|\/\/)(?:www.cw.com.tw)/';
+            $pattern = '/^(https?:\/\/|http?:\/\/|\/\/)(?:www.example.com.tw)/';
             $http_check = preg_match($pattern, $url);
 
             if($http_check){
                 $query = parse_url($url, PHP_URL_QUERY);
                 if($query){
-                    $new_url = $url . '&from=cwamp-article';
+                    $new_url = $url . '&from=example-article';
                 }else{
-                    $new_url = $url . '?from=cwamp-article';
+                    $new_url = $url . '?from=example-article';
                 }
                 $node->setAttribute('href', $new_url);
             }
@@ -145,31 +145,65 @@ class AmpHelper
     {
         $iframe_dom = $dom->getElementsByTagName('iframe');
         $length = $iframe_dom->length;
-        for ($i = 0; $i < $length; $i++){
+        for ($i = 0; $i < $length; $i++) {
             $iframe = $iframe_dom->item(0);
             $path = trim($iframe->getAttribute('src'));
 
-            // default iframe or youtube iframe
-            $pattern = '/^(https?:\/\/|http?:\/\/|\/\/)(?:www.)?(?:youtube.com|youtu.be)?(\/embed\/)([a-zA-Z0-9_-]+)/';
-            preg_match($pattern, $path, $match);
+            $youtube_pattern = '/^(https?:\/\/|http?:\/\/|\/\/)(?:www.)?(?:youtube.com|youtu.be)?(\/embed\/)([a-zA-Z0-9_\/]+)/';;
+            preg_match($youtube_pattern, $path, $youtube_match);
 
-            if($match){
-                self::youtubeFrame($dom, $iframe, $path, $match[3]);
-            }else{
+            $instagram_pattern = '/^(https?:\/\/|http?:\/\/|\/\/)(?:www.)?(?:instagram.com\/p\/)?([a-zA-Z0-9_-]+)?(\/embed)/';
+            preg_match($instagram_pattern, $path, $instagram_match);
+
+            $twitter_pattern = '/^(https?:\/\/|http?:\/\/|\/)(twitframe.com\/show\?url\=)(https?:\/\/|http?:\/\/|\/)(twitter.com\/)([a-zA-Z0-9_-]+\/status\/)([a-zA-Z0-9_-]+)/';
+            preg_match($twitter_pattern, $path, $twitter_match);
+
+            if ($youtube_match) {
+                self::youtubeIFrame($dom, $iframe, $path, $youtube_match[3]);
+            } else if ($instagram_match) {
+                self::instagramIFrame($dom, $iframe, $path, $instagram_match[2]);
+            } else if ($twitter_match) {
+                self::twitterIFrame($dom, $iframe, $path, $twitter_match[6]);
+            } else {
                 self::defaultIFrame($dom, $iframe, $path);
             }
         }
-
         return ($iframe_dom->length) ? true : false;
     }
 
-    private static function youtubeFrame(DOMDocument &$dom, $iframe, $path, $youtube_id)
+    private static function youtubeIFrame(DOMDocument &$dom, $iframe, $path, $youtube_id)
     {
         $path = preg_replace('/^\/\//', 'https://', $path);
         $amp_iframe = $dom->createElement('amp-youtube');
         $amp_iframe->setAttribute('width', '16');
         $amp_iframe->setAttribute('height', '9');
         $amp_iframe->setAttribute('data-videoid', $youtube_id);
+        $amp_iframe->setAttribute('layout', 'responsive');
+
+        $clone = $amp_iframe->cloneNode();
+        $iframe->parentNode->replaceChild($clone, $iframe);
+    }
+
+    private static function instagramIFrame(DOMDocument &$dom, $iframe, $path, $instagram_id)
+    {
+        $path = preg_replace('/^\/\//', 'https://', $path);
+        $amp_iframe = $dom->createElement('amp-instagram');
+        $amp_iframe->setAttribute('width', '1');
+        $amp_iframe->setAttribute('height', '1');
+        $amp_iframe->setAttribute('data-shortcode', $instagram_id);
+        $amp_iframe->setAttribute('layout', 'responsive');
+
+        $clone = $amp_iframe->cloneNode();
+        $iframe->parentNode->replaceChild($clone, $iframe);
+    }
+
+    private static function twitterIFrame(DOMDocument &$dom, $iframe, $path, $twitter_id)
+    {
+        $path = preg_replace('/^\/\//', 'https://', $path);
+        $amp_iframe = $dom->createElement('amp-twitter');
+        $amp_iframe->setAttribute('width', '375');
+        $amp_iframe->setAttribute('height', '472');
+        $amp_iframe->setAttribute('data-tweetid', $twitter_id);
         $amp_iframe->setAttribute('layout', 'responsive');
 
         $clone = $amp_iframe->cloneNode();
