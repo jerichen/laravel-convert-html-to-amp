@@ -158,12 +158,17 @@ class AmpHelper
             $twitter_pattern = '/^(https?:\/\/|http?:\/\/|\/)(twitframe.com\/show\?url\=)(https?:\/\/|http?:\/\/|\/)(twitter.com\/)([a-zA-Z0-9_-]+\/status\/)([a-zA-Z0-9_-]+)/';
             preg_match($twitter_pattern, $path, $twitter_match);
 
+            $facebook_pattern = '/^(https?:\/\/|http?:\/\/|\/)(www\.facebook\.com\/plugins\/video\.php\?href\=)([^ ]+)/';;
+            preg_match($facebook_pattern, $path, $facebook_match);
+
             if ($youtube_match) {
                 self::youtubeIFrame($dom, $iframe, $path, $youtube_match[3]);
             } else if ($instagram_match) {
                 self::instagramIFrame($dom, $iframe, $path, $instagram_match[2]);
             } else if ($twitter_match) {
                 self::twitterIFrame($dom, $iframe, $path, $twitter_match[6]);
+            } else if ($facebook_match) {
+                self::facebookIFrame($dom, $iframe, $path, urldecode($facebook_match[3]));
             } else {
                 self::defaultIFrame($dom, $iframe, $path);
             }
@@ -204,6 +209,18 @@ class AmpHelper
         $amp_iframe->setAttribute('width', '375');
         $amp_iframe->setAttribute('height', '472');
         $amp_iframe->setAttribute('data-tweetid', $twitter_id);
+        $amp_iframe->setAttribute('layout', 'responsive');
+
+        $clone = $amp_iframe->cloneNode();
+        $iframe->parentNode->replaceChild($clone, $iframe);
+    }
+
+    private static function facebookIFrame(DOMDocument &$dom, $iframe, $path, $facebook_url)
+    {
+        $amp_iframe = $dom->createElement('amp-facebook');
+        $amp_iframe->setAttribute('width', '1');
+        $amp_iframe->setAttribute('height', '1');
+        $amp_iframe->setAttribute('data-href', $facebook_url);
         $amp_iframe->setAttribute('layout', 'responsive');
 
         $clone = $amp_iframe->cloneNode();
