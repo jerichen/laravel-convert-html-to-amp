@@ -5,8 +5,12 @@
 - youtube-iframe
 
 #### Packages 使用方式
-```bqsh
+```bash
 composer require jerichen/laravel-convert-html-to-amp
+```
+or
+```bash
+composer config repositories.laravel-convert-html-to-amp vcs git@github.com:jerichen/laravel-convert-html-to-amp
 ```
 
 - publish migrations (原本有 Article 就只做這個)
