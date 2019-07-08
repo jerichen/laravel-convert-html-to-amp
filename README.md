@@ -3,6 +3,8 @@
 - image
 - iframe
 - youtube-iframe
+- instagram-iframe
+- facebook-ifram
 
 #### Packages 使用方式
 ```bash
