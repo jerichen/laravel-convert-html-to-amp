@@ -33,9 +33,9 @@ php artisan db:seed --class=ArticleTableSeeder
 <?php
 namespace App\Http\Controllers;
 
-use Cw\Amp\AmpHelper;
+use Jerichen\Amp\AmpHelper;
 use App\Models\Entities\Article;
-use Cw\Amp\app\models\AmpArticle;
+use Jerichen\Amp\app\models\AmpArticle;
 use Illuminate\Http\Request;
 
 class ArticleController extends Controller
