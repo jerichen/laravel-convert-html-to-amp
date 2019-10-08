@@ -1,8 +1,8 @@
 <?php
-namespace Cw\Amp\app\models;
+namespace Jerichen\Amp\app\models;
 
 use Illuminate\Database\Eloquent\Model;
-use Cw\Amp\app\models\AmpArticle;
+use Jerichen\Amp\app\models\AmpArticle;
 
 class Article extends Model
 {

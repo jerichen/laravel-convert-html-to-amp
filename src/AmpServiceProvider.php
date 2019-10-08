@@ -1,7 +1,6 @@
 <?php
-namespace Cw\Amp;
+namespace Jerichen\Amp;
 
-use Cw\Amp\publishable\app\models\AmpArticle;
 use Illuminate\Support\ServiceProvider;
 
 class AmpServiceProvider extends ServiceProvider

@@ -1,7 +1,7 @@
 <?php
-namespace Cw\Amp;
+namespace Jerichen\Amp;
 
-use Cw\Amp\app\models\Article;
+use Jerichen\Amp\app\models\Article;
 use DOMDocument;
 use Imagick;
 use Log;

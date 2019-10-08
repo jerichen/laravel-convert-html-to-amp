@@ -1,5 +1,5 @@
 <?php
-namespace Cw\Amp\app\models;
+namespace Jerichen\Amp\app\models;
 
 use Illuminate\Database\Eloquent\Model;
 
