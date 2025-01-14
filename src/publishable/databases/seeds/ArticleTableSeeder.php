@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Database\Seeder;
-use Cw\Amp\app\models\Article;
+use Jerichen\Amp\app\models\Article;
 
 class ArticleTableSeeder extends Seeder
 {
